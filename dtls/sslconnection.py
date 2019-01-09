@@ -45,6 +45,7 @@ import errno
 import socket
 import hmac
 import datetime
+import hashlib as _hashlib
 from logging import getLogger
 from os import urandom, fsencode
 from select import select
@@ -302,7 +303,7 @@ class SSLConnection(object):
             rsock = self._sock
             BIO_dgram_set_connected(self._wbio.value, peer_address)
         else:
-            from demux import UDPDemux
+            from .demux import UDPDemux
             self._udp_demux = UDPDemux(self._sock)
             rsock = self._udp_demux.get_connection(None)
         if rsock is self._sock:
@@ -482,19 +483,22 @@ class SSLConnection(object):
             peer_address = self._listening_peer_address
         else:
             peer_address = BIO_dgram_get_peer(self._rbio.value)
-        cookie_hmac = hmac.new(self._rnd_key, str(peer_address))
+        cookie_hmac = hmac.new(self._rnd_key,
+                               str(peer_address).encode('utf-8'),
+                               digestmod=_hashlib.sha256)
         return cookie_hmac.digest()
 
     def _generate_cookie_cb(self, ssl):
-        return self._get_cookie(ssl)
+        self._cookie = self._get_cookie(ssl)
+        return self._cookie
 
     def _verify_cookie_cb(self, ssl, cookie):
-        if self._get_cookie(ssl) != cookie:
+        if self._cookie != bytes([ord(i) for i in cookie]):
             raise Exception("DTLS cookie mismatch")
 
     def __init__(self, sock, keyfile=None, certfile=None,
                  server_side=False, cert_reqs=CERT_NONE,
-                 ssl_version=PROTOCOL_DTLS, ca_certs=None,
+                 ssl_version=PROTOCOL_DTLSv1_2, ca_certs=None,
                  do_handshake_on_connect=True,
                  suppress_ragged_eofs=True, ciphers=None,
                  cb_user_config_ssl_ctx=None,
@@ -532,6 +536,7 @@ class SSLConnection(object):
         self._intf_ssl_ctx = None
         self._user_config_ssl = cb_user_config_ssl
         self._intf_ssl = None
+        self._cookie = None
 
         if isinstance(sock, SSLConnection):
             post_init = self._copy_server()
@@ -559,7 +564,7 @@ class SSLConnection(object):
         self._wbio.disown()
         if post_init:
             post_init()
-            
+
     def get_socket(self, inbound):
         """Retrieve a socket used by this connection
 

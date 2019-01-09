@@ -77,7 +77,7 @@ def do_patch():
 
 def _wrap_socket(sock, keyfile=None, certfile=None,
                  server_side=False, cert_reqs=CERT_NONE,
-                 ssl_version=PROTOCOL_DTLS, ca_certs=None,
+                 ssl_version=PROTOCOL_DTLSv1_2, ca_certs=None,
                  do_handshake_on_connect=True,
                  suppress_ragged_eofs=True,
                  ciphers=None,
@@ -126,12 +126,13 @@ def _sockclone_kwargs(old):
 
 def _SSLSocket_init(self, sock=None, keyfile=None, certfile=None,
                     server_side=False, cert_reqs=CERT_NONE,
-                    ssl_version=PROTOCOL_DTLS, ca_certs=None,
+                    ssl_version=PROTOCOL_DTLSv1_2, ca_certs=None,
                     do_handshake_on_connect=True,
                     family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None,
                     suppress_ragged_eofs=True, npn_protocols=None, ciphers=None,
                     server_hostname=None,
                     _context=None,
+                    _session=None,
                     cb_user_config_ssl_ctx=None,
                     cb_user_config_ssl=None):
     is_connection = is_datagram = False
@@ -153,7 +154,8 @@ def _SSLSocket_init(self, sock=None, keyfile=None, certfile=None,
                                     npn_protocols=npn_protocols,
                                     ciphers=ciphers,
                                     server_hostname=server_hostname,
-                                    _context=_context)
+                                    _context=_context,
+                                    _session=_session)
     # DTLS code paths: datagram socket and newly accepted DTLS connection
     if is_datagram:
         socket.__init__(self, **_sockclone_kwargs(sock))

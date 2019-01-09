@@ -509,7 +509,7 @@ def raise_ssl_error(result, func, args, ssl):
         buf = create_string_buffer(512)
         _ERR_error_string_n(err, buf, sizeof(buf))
         errqueue.append((err, buf.value))
-    _logger.debug("SSL error raised: ssl_error: %d, result: %d, " +
+    _logger.error("SSL error raised: ssl_error: %d, result: %d, " +
                   "errqueue: %s, func_name: %s",
                   ssl_error, result, errqueue, func.func_name)
     raise openssl_error()(ssl_error, errqueue, result, func, args)
@@ -665,6 +665,8 @@ list(map(lambda x: _make_function(*x), (
      ((DTLS_Method, "ret"),)),
     ("DTLSv1_2_client_method", libssl,
      ((DTLS_Method, "ret"),)),
+    ("DTLSv1_listen", libssl,
+     ((c_int, "ret"), (SSL, "ssl"), (c_void_p, "parg")), False),
     ("SSL_CTX_new", libssl,
      ((SSLCTX, "ret"), (DTLS_Method, "meth"))),
     ("SSL_CTX_free", libssl,
@@ -979,8 +981,8 @@ def DTLSv1_handle_timeout(ssl):
 
 def DTLSv1_listen(ssl):
     su = sockaddr_u()
-    ret = _SSL_ctrl(ssl, DTLS_CTRL_LISTEN, 0, byref(su))
-    errcheck_ord(ret, _SSL_ctrl, (ssl, DTLS_CTRL_LISTEN, 0, byref(su)))
+    ret = _DTLSv1_listen(ssl, byref(su))
+    errcheck_ord(ret, _DTLSv1_listen, (ssl, byref(su)))
     return addr_tuple_from_sockaddr_u(su)
 
 def DTLS_set_link_mtu(ssl, mtu):
