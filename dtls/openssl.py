@@ -634,6 +634,9 @@ __all__ = [
     "SSL_state_string_long", "SSL_alert_type_string_long", "SSL_alert_desc_string_long",
     "SSL_get_peer_cert_chain",
     "SSL_CTX_set_cookie_cb",
+    "SSL_use_psk_identity_hint",
+    "SSL_set_psk_server_callback",
+    "SSL_set_psk_client_callback",
     "OBJ_obj2txt", "decode_ASN1_STRING", "ASN1_TIME_print",
     "OBJ_nid2sn",
     "X509_get_notAfter",
@@ -751,6 +754,12 @@ list(map(lambda x: _make_function(*x), (
      ((c_int, "ret"), (SSL, "ssl"))),
     ("SSL_set_read_ahead", libssl,
      ((None, "ret"), (SSL, "ssl"), (c_int, "yes"))),
+    ("SSL_use_psk_identity_hint", libssl,
+     ((c_int, "ret"), (SSL, "ssl"), (c_char_p, "identity_hint"))),
+    ("SSL_set_psk_client_callback", libssl,
+     ((None, "ret"), (SSL, "ssl"), (c_void_p, "psk_client_callback")), False),
+    ("SSL_set_psk_server_callback", libssl,
+     ((None, "ret"), (SSL, "ssl"), (c_void_p, "psk_server_callback")), False),
     ("X509_free", libcrypto,
      ((None, "ret"), (X509, "a"))),
     ("PEM_read_bio_X509_AUX", libcrypto,
@@ -910,8 +919,7 @@ def SSL_CTX_set_tmp_ecdh(ctx, ec_key):
     _ec_key_p = cast(ec_key.raw, c_void_p)
     return _SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TMP_ECDH, 0, _ec_key_p)
 
-_rint_voidp_ubytep_uintp = CFUNCTYPE(c_int, c_void_p, POINTER(c_ubyte),
-                                     POINTER(c_uint))
+_rint_voidp_ubytep_uintp = CFUNCTYPE(c_int, c_void_p, POINTER(c_ubyte), POINTER(c_uint))
 _rint_voidp_ubytep_uint = CFUNCTYPE(c_int, c_void_p, POINTER(c_ubyte), c_uint)
 
 def SSL_CTX_set_cookie_cb(ctx, generate, verify):
@@ -940,6 +948,44 @@ def SSL_CTX_set_cookie_cb(ctx, generate, verify):
     _SSL_CTX_set_cookie_generate_cb(ctx, gen_cb)
     _SSL_CTX_set_cookie_verify_cb(ctx, ver_cb)
     return gen_cb, ver_cb
+
+_uint_voidp_charp_ubytep_uint = CFUNCTYPE(c_uint, c_void_p, c_char_p, POINTER(c_ubyte), c_uint)
+
+def SSL_set_psk_server_callback(ssl, get_server_psk):
+    def py_get_server_psk(ssl, identity, psk, psk_max_len):
+        try:
+            ret_psk = get_server_psk(identity.decode("utf-8"))
+            memmove(psk, ret_psk, len(ret_psk))
+        except:
+            _logger.exception("SSL_set_psk_server_callback failed")
+            return 0
+        return len(ret_psk)
+
+    _logger.debug("SSL_set_psk_server_callback")
+
+    server_cb = _uint_voidp_charp_ubytep_uint(py_get_server_psk)
+    _SSL_set_psk_server_callback(ssl, server_cb)
+    return server_cb
+
+_uint_voidp_charp_ubytep_uint_ubytep_uint = CFUNCTYPE(c_uint, c_void_p, c_char_p, POINTER(c_ubyte), c_uint, POINTER(c_ubyte), c_uint)
+
+def SSL_set_psk_client_callback(ssl, get_client_psk):
+    def py_get_client_psk(ssl, hint, identity, max_identity_len, psk, max_psk_len):
+        try:
+            (ret_psk, ret_identity) = get_client_psk(hint.decode("utf-8"))
+            memmove(psk, ret_psk, len(ret_psk))
+            memmove(identity, ret_identity.encode("utf-8"), len(ret_identity))
+            identity[len(ret_identity)] = 0
+        except:
+            _logger.exception("SSL_set_psk_client_callback failed")
+            return 0
+        return len(ret_psk)
+
+    _logger.debug("SSL_set_psk_client_callback")
+
+    client_cb = _uint_voidp_charp_ubytep_uint_ubytep_uint(py_get_client_psk)
+    _SSL_set_psk_client_callback(ssl, client_cb)
+    return client_cb
 
 def BIO_dgram_set_connected(bio, peer_address):
     su = sockaddr_u_from_addr_tuple(peer_address)

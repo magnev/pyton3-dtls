@@ -337,6 +337,13 @@ class SSLConnection(object):
                 _CallbackProxy(self._generate_cookie_cb),
                 _CallbackProxy(self._verify_cookie_cb))
         self._ssl = _SSL(SSL_new(self._ctx.value))
+
+        if self._psk:
+            _logger.debug("PSK enabled")
+            self.psk_callback = self._psk if callable(self._psk) else lambda identity: self._psk
+            self._psk_cb_keepalive = SSL_set_psk_server_callback(self._ssl.value, self.psk_callback)
+            SSL_use_psk_identity_hint(self._ssl.value, self._hint.encode('ascii') if self._hint else "".encode('ascii'))
+
         self._intf_ssl = SSL(self._ssl.value)
         SSL_set_accept_state(self._ssl.value)
         if peer_address and self._do_handshake_on_connect:
@@ -362,6 +369,12 @@ class SSLConnection(object):
             verify_mode = SSL_VERIFY_PEER
         self._config_ssl_ctx(verify_mode)
         self._ssl = _SSL(SSL_new(self._ctx.value))
+
+        if self._psk:
+            _logger.debug("PSK enabled")
+            callback = self._psk if callable(self._psk) else lambda hint: self._psk if isinstance(self._psk, tuple) else (self._psk, "")
+            self._psk_cb_keepalive = SSL_set_psk_client_callback(self._ssl.value, callback)
+
         self._intf_ssl = SSL(self._ssl.value)
         SSL_set_connect_state(self._ssl.value)
         if peer_address:
@@ -501,6 +514,7 @@ class SSLConnection(object):
                  ssl_version=PROTOCOL_DTLSv1_2, ca_certs=None,
                  do_handshake_on_connect=True,
                  suppress_ragged_eofs=True, ciphers=None,
+                 psk=None, hint=None,
                  cb_user_config_ssl_ctx=None,
                  cb_user_config_ssl=None):
         """Constructor
@@ -512,8 +526,8 @@ class SSLConnection(object):
 
         if keyfile and not certfile or certfile and not keyfile:
             raise_ssl_error(ERR_BOTH_KEY_CERT_FILES)
-        if server_side and not keyfile:
-            raise_ssl_error(ERR_BOTH_KEY_CERT_FILES_SVR)
+        # if server_side and not keyfile:
+        #     raise_ssl_error(ERR_BOTH_KEY_CERT_FILES_SVR)
         #if cert_reqs != CERT_NONE and not ca_certs:
         #    raise_ssl_error(ERR_NO_CERTS)
 
@@ -529,6 +543,8 @@ class SSLConnection(object):
         self._do_handshake_on_connect = do_handshake_on_connect
         self._suppress_ragged_eofs = suppress_ragged_eofs
         self._ciphers = ciphers
+        self._psk = psk
+        self._hint = hint
         self._handshake_done = False
         self._wbio_nb = self._rbio_nb = False
 
