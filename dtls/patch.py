@@ -80,7 +80,7 @@ def _wrap_socket(sock, keyfile=None, certfile=None,
                  ssl_version=PROTOCOL_DTLSv1_2, ca_certs=None,
                  do_handshake_on_connect=True,
                  suppress_ragged_eofs=True,
-                 ciphers=None,
+                 ciphers=None, psk=None, hint=None,
                  cb_user_config_ssl_ctx=None,
                  cb_user_config_ssl=None):
 
@@ -89,7 +89,7 @@ def _wrap_socket(sock, keyfile=None, certfile=None,
                          ssl_version=ssl_version, ca_certs=ca_certs,
                          do_handshake_on_connect=do_handshake_on_connect,
                          suppress_ragged_eofs=suppress_ragged_eofs,
-                         ciphers=ciphers,
+                         ciphers=ciphers, psk=psk, hint=hint,
                          cb_user_config_ssl_ctx=cb_user_config_ssl_ctx,
                          cb_user_config_ssl=cb_user_config_ssl)
 
@@ -130,7 +130,7 @@ def _SSLSocket_init(self, sock=None, keyfile=None, certfile=None,
                     do_handshake_on_connect=True,
                     family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None,
                     suppress_ragged_eofs=True, npn_protocols=None, ciphers=None,
-                    server_hostname=None,
+                    psk=None, hint=None, server_hostname=None,
                     _context=None,
                     _session=None,
                     cb_user_config_ssl_ctx=None,
@@ -146,8 +146,7 @@ def _SSLSocket_init(self, sock=None, keyfile=None, certfile=None,
                                     certfile=certfile, server_side=server_side,
                                     cert_reqs=cert_reqs,
                                     ssl_version=ssl_version, ca_certs=ca_certs,
-                                    do_handshake_on_connect=
-                                    do_handshake_on_connect,
+                                    do_handshake_on_connect=do_handshake_on_connect,
                                     family=family, type=type, proto=proto,
                                     fileno=fileno,
                                     suppress_ragged_eofs=suppress_ragged_eofs,
@@ -192,6 +191,8 @@ def _SSLSocket_init(self, sock=None, keyfile=None, certfile=None,
         check_hostname = False
 
     self._context = FakeContext()
+    self.psk = psk
+    self.hint = hint
     self.keyfile = keyfile
     self.certfile = certfile
     self.cert_reqs = cert_reqs
@@ -228,6 +229,7 @@ def _SSLSocket_listen(self, ignored):
                                  self.ca_certs,
                                  self.do_handshake_on_connect,
                                  self.suppress_ragged_eofs, self.ciphers,
+                                 self.psk, self.hint,
                                  cb_user_config_ssl_ctx=self._user_config_ssl_ctx,
                                  cb_user_config_ssl=self._user_config_ssl)
 
@@ -258,6 +260,7 @@ def _SSLSocket_real_connect(self, addr, return_errno):
                                  self.ca_certs,
                                  self.do_handshake_on_connect,
                                  self.suppress_ragged_eofs, self.ciphers,
+                                 self.psk, self.hint,
                                  cb_user_config_ssl_ctx=self._user_config_ssl_ctx,
                                  cb_user_config_ssl=self._user_config_ssl)
     try:
