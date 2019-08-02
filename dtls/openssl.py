@@ -394,6 +394,10 @@ class EC_builtin_curve(Structure):
                 ("comment", c_char_p)]
 
 
+class OPENSSL_INIT_SETTINGS(Structure):
+    _fields_ = [("appname", c_char_p)]
+
+
 #
 # Socket address conversions
 #
@@ -654,10 +658,9 @@ __all__ = [
 
 list(map(lambda x: _make_function(*x), (
     ("OPENSSL_init_ssl", libssl,
-     #((c_int, "ret"),)),
-     ((c_int, "ret"), (c_uint64, "opts"),)),
-     ("OpenSSL_version", libcrypto,
-      ((c_char_p, "ret"), (c_int, "t"))),
+     ((c_int, "ret"), (c_uint64, "opts"),(POINTER(OPENSSL_INIT_SETTINGS), "settings"))),
+    ("OpenSSL_version", libcrypto,
+     ((c_char_p, "ret"), (c_int, "t"))),
     ("DTLS_server_method", libssl,
      ((DTLS_Method, "ret"),)),
     ("DTLSv1_server_method", libssl,

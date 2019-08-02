@@ -74,7 +74,7 @@ CERT_REQUIRED = 2
 #
 # One-time global OpenSSL library initialization
 #
-OPENSSL_init_ssl(0)
+OPENSSL_init_ssl(0, None)
 #SSL_load_error_strings()
 
 def _ssl_logging_cb(conn, where, return_code):
