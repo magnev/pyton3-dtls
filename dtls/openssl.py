@@ -975,7 +975,10 @@ _uint_voidp_charp_ubytep_uint_ubytep_uint = CFUNCTYPE(c_uint, c_void_p, c_char_p
 def SSL_set_psk_client_callback(ssl, get_client_psk):
     def py_get_client_psk(ssl, hint, identity, max_identity_len, psk, max_psk_len):
         try:
-            (ret_psk, ret_identity) = get_client_psk(hint.decode("utf-8"))
+            if hint:
+                (ret_psk, ret_identity) = get_client_psk(hint.decode("utf-8"))
+            else:
+                (ret_psk, ret_identity) = get_client_psk(None)
             memmove(psk, ret_psk, len(ret_psk))
             memmove(identity, ret_identity.encode("utf-8"), len(ret_identity))
             identity[len(ret_identity)] = 0
