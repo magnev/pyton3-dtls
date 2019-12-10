@@ -28,8 +28,8 @@ from argparse import ArgumentParser
 from pickle import dump, load
 from setuptools import setup
 
-NAME = "Dtls"
-VERSION = "1.2.3"
+NAME = "dtls"
+VERSION = "2.0.0"
 
 if __name__ == "__main__":
     # Full upload sequence for new version:
