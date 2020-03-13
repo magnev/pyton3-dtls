@@ -81,6 +81,7 @@ def _wrap_socket(sock, keyfile=None, certfile=None,
                  do_handshake_on_connect=True,
                  suppress_ragged_eofs=True,
                  ciphers=None, psk=None, hint=None,
+                 connect_timeout=None,
                  cb_user_config_ssl_ctx=None,
                  cb_user_config_ssl=None):
 
@@ -90,6 +91,7 @@ def _wrap_socket(sock, keyfile=None, certfile=None,
                          do_handshake_on_connect=do_handshake_on_connect,
                          suppress_ragged_eofs=suppress_ragged_eofs,
                          ciphers=ciphers, psk=psk, hint=hint,
+                         connect_timeout=connect_timeout,
                          cb_user_config_ssl_ctx=cb_user_config_ssl_ctx,
                          cb_user_config_ssl=cb_user_config_ssl)
 
@@ -133,9 +135,11 @@ def _SSLSocket_init(self, sock=None, keyfile=None, certfile=None,
                     psk=None, hint=None, server_hostname=None,
                     _context=None,
                     _session=None,
+                    connect_timeout=None,
                     cb_user_config_ssl_ctx=None,
                     cb_user_config_ssl=None):
     is_connection = is_datagram = False
+    self.connect_timeout = connect_timeout
     if isinstance(sock, SSLConnection):
         is_connection = True
     elif hasattr(sock, "type") and sock.type == SOCK_DGRAM:
@@ -261,6 +265,7 @@ def _SSLSocket_real_connect(self, addr, return_errno):
                                  self.do_handshake_on_connect,
                                  self.suppress_ragged_eofs, self.ciphers,
                                  self.psk, self.hint,
+                                 self.connect_timeout,
                                  cb_user_config_ssl_ctx=self._user_config_ssl_ctx,
                                  cb_user_config_ssl=self._user_config_ssl)
     try:

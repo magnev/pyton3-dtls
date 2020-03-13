@@ -515,6 +515,7 @@ class SSLConnection(object):
                  do_handshake_on_connect=True,
                  suppress_ragged_eofs=True, ciphers=None,
                  psk=None, hint=None,
+                 connect_timeout=None,
                  cb_user_config_ssl_ctx=None,
                  cb_user_config_ssl=None):
         """Constructor
@@ -545,6 +546,7 @@ class SSLConnection(object):
         self._ciphers = ciphers
         self._psk = psk
         self._hint = hint
+        self._connect_timeout = connect_timeout
         self._handshake_done = False
         self._wbio_nb = self._rbio_nb = False
 
@@ -715,6 +717,8 @@ class SSLConnection(object):
         Arguments:
         peer_address - address tuple of server peer
         """
+        if isinstance(self._connect_timeout, int):
+            self._sock.settimeout(self._connect_timeout)
 
         self._sock.connect(peer_address)
         peer_address = self._sock.getpeername()  # substituted host addrinfo

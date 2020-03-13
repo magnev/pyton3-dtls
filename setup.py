@@ -29,7 +29,7 @@ from pickle import dump, load
 from setuptools import setup
 
 NAME = "dtls"
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 
 if __name__ == "__main__":
     # Full upload sequence for new version:
